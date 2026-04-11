@@ -1,0 +1,194 @@
+---
+title: "Project1_Checkpoint1"
+author: Ian Cay
+format: html
+---
+
+# Dataset Context
+
+This dataset has political information for 208 countries from 1950-2020. This includes regime information, electoral information, etc.
+
+# Cleaning the Data
+
+```{r}
+# Data from the package {democracyData}
+# install.packages("pak")
+# pak::pak("xmarquez/democracyData")
+library(democracyData)
+library(tidyverse)
+
+# Raw Dataset
+democracy <-
+  democracyData::pacl_update
+
+# Cleaned Dataset
+democracy_clean <-
+  democracyData::pacl_update |> 
+  # Changes variable names to snake_case
+  janitor::clean_names() |> 
+  # Selects and renames variables to include in dataset
+  dplyr::select(
+    "country_name" = "pacl_update_country",
+    "country_code" = "pacl_update_country_isocode",
+    "year",
+    "regime_category_index" = "dd_regime",
+    "regime_category" = "dd_category",
+    "is_monarchy" = "monarchy",
+    "is_commonwealth" = "commonwealth",
+    "monarch_name",
+    "monarch_accession_year" = "monarch_accession",
+    "monarch_birthyear",
+    "is_female_monarch" = "female_monarch",
+    "is_democracy" = "democracy",
+    "is_presidential" = "presidential",
+    "president_name",
+    "president_accesion_year" = "president_accesion",
+    "president_birthyear",
+    "is_interim_phase" = "interim_phase",
+    "is_female_president" = "female_president",
+    "is_colony" = "colony",
+    "colony_of",
+    "colony_administrated_by",
+    "is_communist" = "communist",
+    "has_regime_change_lag" = "regime_change_lag",
+    "spatial_democracy",
+    "parliament_chambers" = "no_of_chambers_in_parliament",
+    "has_proportional_voting" = "proportional_voting",
+    "election_system",
+    "lower_house_members" = "no_of_members_in_lower_house",
+    "upper_house_members" = "no_of_members_in_upper_house",
+    "third_house_members" = "no_of_members_in_third_house",
+    "has_new_constitution" = "new_constitution",
+    "has_full_suffrage" = "fullsuffrage",
+    "suffrage_restriction",
+    "electoral_category_index" = "electoral",
+    "spatial_electoral",
+    "has_alternation" = "alternation",
+    "is_multiparty" = "multiparty",
+    "has_free_and_fair_election" = "free_and_fair_election",
+    "parliamentary_election_year",
+    "election_month" = "election_month_year",
+    "has_postponed_election" = "postponed_election"
+  ) |>
+  dplyr::mutate(
+    election_month = dplyr::na_if(.data$election_month, "?")
+  ) |> 
+  tidyr::separate_wider_regex(
+    "election_month",
+    patterns = c(
+      election_month = "\\D+",
+      election_year = "\\d{4}$"
+    ),
+    too_few = "align_start"
+  ) |> 
+  dplyr::mutate(
+    electoral_category = dplyr::case_match(
+      .data$electoral_category_index,
+      0 ~ "no elections",
+      1 ~ "single-party elections",
+      2 ~ "non-democratic multi-party elections",
+      3 ~ "democratic elections"
+    ),
+    .after = "electoral_category_index"
+  ) |> 
+  dplyr::mutate(
+    #Removes any whitespace in election_month
+    election_month = stringr::str_squish(.data$election_month),
+    # converts numerical variables to integers
+    dplyr::across(
+      c(
+        tidyselect::ends_with("_index"),
+        tidyselect::contains("year"),
+        tidyselect::ends_with("_members"),
+        "parliament_chambers"
+      ),
+      as.integer
+    ),
+    # converts binary variables to logical
+    dplyr::across(
+      c(
+        tidyselect::starts_with("is_"),
+        tidyselect::starts_with("has_")
+      ),
+      as.logical
+    )
+  )
+
+```
+
+# Research Questions
+
+## With this Dataset
+
+-   Which electoral categories were the most popular over time?
+-   How has the popularity of communism changed over time?
+
+## With Supplemental Data
+
+-   Do socialist countries have higher literacy rates over time compared to non-socialist countries?
+-   How does the GDP per capita of countries that are democracies change over time compared to countries that aren't democracies?
+
+# Visualization Sketches
+
+```{r}
+democracy_clean |>
+  # Remove rows where regime_category is missing
+  tidyr::drop_na(electoral_category) |>
+  # Count the number of countries per regime category per year
+  dplyr::count(year, electoral_category) |>
+  # Plot the results
+  ggplot2::ggplot(
+    ggplot2::aes(
+      x = year,
+      y = n,
+      colour = electoral_category
+    )
+  ) +
+  ggplot2::geom_line(linewidth = 1) +
+  ggplot2::labs(
+    title = "Popularity of Electoral Categories Over Time",
+    x = "Year",
+    y = "Number of Countries",
+    colour = "Electoral Category"
+  ) +
+  ggplot2::theme_minimal()
+```
+
+```{r}
+democracy_clean |>
+  # Remove rows where is_communist is missing
+  tidyr::drop_na(is_communist) |>
+  # Count communist and non-communist countries per year
+  dplyr::count(year, is_communist) |>
+  # Keep only communist countries
+  dplyr::filter(is_communist == TRUE) |>
+  # Plot the results
+  ggplot2::ggplot(
+    ggplot2::aes(
+      x = year,
+      y = n
+    )
+  ) +
+  ggplot2::geom_line(linewidth = 1, colour = "red") +
+  ggplot2::geom_area(alpha = 0.2, fill = "red") +
+  ggplot2::labs(
+    title = "Number of Communist Countries Over Time",
+    x = "Year",
+    y = "Number of Communist Countries"
+  ) +
+  ggplot2::theme_minimal()
+```
+
+```{r}
+library(ggplot2)
+library(png)
+
+visual <- png::readPNG("visual.png")
+
+ggplot2::ggplot() +
+  ggplot2::annotation_raster(
+    visual,
+    xmin = -Inf, xmax = Inf,
+    ymin = -Inf, ymax = Inf
+  )
+```
