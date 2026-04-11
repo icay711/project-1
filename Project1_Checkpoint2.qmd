@@ -4,7 +4,7 @@ author: "Ian Cay, Drew Cloughley, and Nico Ragasa"
 format: html
 ---
 
-## Context
+## Data Set Up
 
 ```{r}
 #| warning: false
@@ -12,36 +12,11 @@ library(tidyverse)
 library(kableExtra)
 
 democracy_data <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2024/2024-11-05/democracy_data.csv')
-
-
-str(democracy_data)
 ```
 
-[Describe the context of the data]{.underline}:\
-
-The data focuses on
-
--   Whether a country is a democracy or non-democracy
-
--   Transitions between regimes
-
--   Political institutions and leadership during regime changes
-
-[Explains what cleaning has been done to the data]{.underline}:
-
-The data has been cleaned mostly by renaming variables to be more understandable. As well as that, the data has been organized into an easily usable format by structuring in country-year observations.
-
-[Pose **at least two** research questions that could be addressed with these data]{.underline}:
-
--   How many countries transitioned from democracy to non-democracy between 1950 and 2020?
-
--   What proportion of countries that became non-democratic eventually returned to democracy?
-
-[Pose **at least two** research questions that could be addressed using supplemental data]{.underline}:
-
--   Are democracies more likely to collapse in regions with higher conflict or instability?
-
--   Do economic conditions (e.g., GDP per capita, inflation) predict transitions from democracy to dictatorship?
+## Research Questions of Interest
+-   
+-   
 
 ## Assigning Continent names to each country and filtering out non-countries
 
