@@ -7,6 +7,7 @@ format: html
 ## Context
 
 ```{r}
+#| warning: false
 library(tidyverse)
 library(kableExtra)
 
@@ -148,4 +149,33 @@ ggplot(communist_summary, aes(x = continent, y = total_communist_countries, fill
     x = "Continent",
     y = "Count"
   )
+```
+
+## Percent of Countries that are Communist by Continent
+
+```{r}
+percent_communist <- function(cont){
+  democracy_data |>
+    filter(continent == cont) |>
+    distinct(country_name, is_communist) |>
+    summarize(pct_communist = mean(is_communist, na.rm = TRUE)) |>
+    pull(pct_communist)
+}
+
+percents <- democracy_data |>
+  distinct(continent) |>
+  pull(continent) |>
+  map_dbl(percent_communist)
+
+pct_table <- democracy_data |>
+  distinct(continent) |>
+  mutate(pct_communist = percents)
+
+pct_table
+
+ggplot(pct_table, aes(x = continent, y = pct_communist, fill = continent)) +
+  geom_col() +
+  labs(x = "Continent", y = "Percent Communist",
+       fill = "Continent", title = "Percent of Countries that are Communist by Continent")
+
 ```
