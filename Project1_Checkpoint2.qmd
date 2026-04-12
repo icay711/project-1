@@ -1,6 +1,9 @@
 ---
 title: "Project 1 Checkpoint 2"
-author: "Ian Cay, Drew Cloughley, and Nico Ragasa"
+authors: 
+  - name: "Ian Cay"
+  - name: "Drew Cloughley"
+  - name: "Nico Ragasa"
 format: html
 ---
 
@@ -66,6 +69,9 @@ count_regime_categories(2020)
   
 ```
 
+Parliamentary democracy, civilian dictatorship, and presidential democracy are the most prevalent categories of regimes in 2020.
+
+
 ## Prevalence of Communism, Monarchies, and Democracies in 2020
 
 ```{r}
@@ -121,6 +127,8 @@ count_political_ideologies <- function(selected_year) {
 count_political_ideologies(2020)
 
 ```
+
+In 2020, there are 129 democratic countries, but there are only 7 communist countries remaining in 2020. Also, there are 49 monarchical countries.
 
 
 ## Assigning Continent names to each country and filtering out non-countries
@@ -181,6 +189,7 @@ democracy_data <- democracy_data |>
   filter(!is.na(continent))
 ```
 
+
 ## Communist countries by Continent
 
 ```{r}
@@ -211,7 +220,7 @@ ggplot(communist_summary, aes(x = continent, y = total_communist_countries, fill
   )
 ```
 
-## Percent of Countries that are Communist by Continent
+## Percent of Countries that have been Communist by Continent
 
 ```{r}
 #| results: 'asis'
@@ -240,6 +249,6 @@ pct_table |>
 ggplot(pct_table, aes(x = continent, y = pct_communist, fill = continent)) +
   geom_col() +
   labs(x = "Continent", y = "Percent Communist",
-       fill = "Continent", title = "Percent of Countries that are Communist by Continent")
+       fill = "Continent", title = "Percent of Countries that have been Communist by Continent")
 
 ```

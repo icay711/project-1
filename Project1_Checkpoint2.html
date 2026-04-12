@@ -6,7 +6,6 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Ian Cay, Drew Cloughley, and Nico Ragasa">
 
 <title>Project 1 Checkpoint 2</title>
 <style>
@@ -93,9 +92,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="quarto-title-meta">
 
     <div>
-    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-heading">Authors</div>
     <div class="quarto-title-meta-contents">
-             <p>Ian Cay, Drew Cloughley, and Nico Ragasa </p>
+             <p>Ian Cay </p>
+             <p>Drew Cloughley </p>
+             <p>Nico Ragasa </p>
           </div>
   </div>
     
@@ -292,6 +293,7 @@ Unincorporated territory of the United States with Commonwealth status
 </tbody>
 </table>
 <p><img src="Project1_Checkpoint2_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid" width="672"></p>
+<p>Parliamentary democracy, civilian dictatorship, and presidential democracy are the most prevalent categories of regimes in 2020.</p>
 </section>
 <section id="prevalence-of-communism-monarchies-and-democracies-in-2020" class="level2">
 <h2 class="anchored" data-anchor-id="prevalence-of-communism-monarchies-and-democracies-in-2020">Prevalence of Communism, Monarchies, and Democracies in 2020</h2>
@@ -382,6 +384,7 @@ Monarchy
 </tbody>
 </table>
 <p><img src="Project1_Checkpoint2_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
+<p>In 2020, there are 129 democratic countries, but there are only 7 communist countries remaining in 2020. Also, there are 49 monarchical countries.</p>
 </section>
 <section id="assigning-continent-names-to-each-country-and-filtering-out-non-countries" class="level2">
 <h2 class="anchored" data-anchor-id="assigning-continent-names-to-each-country-and-filtering-out-non-countries">Assigning Continent names to each country and filtering out non-countries</h2>
@@ -497,8 +500,8 @@ Monarchy
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><img src="Project1_Checkpoint2_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
 </section>
-<section id="percent-of-countries-that-are-communist-by-continent" class="level2">
-<h2 class="anchored" data-anchor-id="percent-of-countries-that-are-communist-by-continent">Percent of Countries that are Communist by Continent</h2>
+<section id="percent-of-countries-that-have-been-communist-by-continent" class="level2">
+<h2 class="anchored" data-anchor-id="percent-of-countries-that-have-been-communist-by-continent">Percent of Countries that have been Communist by Continent</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>percent_communist <span class="ot">&lt;-</span> <span class="cf">function</span>(cont){</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  democracy_data <span class="sc">|&gt;</span></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(continent <span class="sc">==</span> cont) <span class="sc">|&gt;</span></span>
@@ -560,7 +563,7 @@ Monarchy
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(pct_table, <span class="fu">aes</span>(<span class="at">x =</span> continent, <span class="at">y =</span> pct_communist, <span class="at">fill =</span> continent)) <span class="sc">+</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Continent"</span>, <span class="at">y =</span> <span class="st">"Percent Communist"</span>,</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>       <span class="at">fill =</span> <span class="st">"Continent"</span>, <span class="at">title =</span> <span class="st">"Percent of Countries that are Communist by Continent"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>       <span class="at">fill =</span> <span class="st">"Continent"</span>, <span class="at">title =</span> <span class="st">"Percent of Countries that have been Communist by Continent"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><img src="Project1_Checkpoint2_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
 </section>
 
