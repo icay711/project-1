@@ -16,10 +16,12 @@ democracy_data <- readr::read_csv('https://raw.githubusercontent.com/rfordatasci
 ```
 
 ## Research Questions of Interest
--   
--   
 
-## Countries (Including Colonies) by Regime Category in 2020
+-   What regime category is the most prevalent among countries in 2020?
+-   Are communist, democratic, or monarchical countries the most prevalent in 2020?
+-   Which continent has the highest proportion of countries that have been communist before?
+
+## Number of Countries (Including Colonies) by Regime Category in 2020
 
 ```{r}
 #| results: 'asis'
@@ -64,7 +66,7 @@ count_regime_categories(2020)
   
 ```
 
-## 2020 Countries Communism vs Monarchy vs Democracy
+## Prevalence of Communism, Monarchies, and Democracies in 2020
 
 ```{r}
 #| results: 'asis'
@@ -86,7 +88,7 @@ count_political_ideologies <- function(selected_year) {
   
   # Create a summary 
   summary_data <- tibble(
-    political_ideology = c("Communist", "Democracy", "Monarchy"),
+    political_ideology = c("Communism", "Democracy", "Monarchy"),
     number_of_countries = counts,
     year = selected_year
   ) |>
@@ -124,6 +126,8 @@ count_political_ideologies(2020)
 ## Assigning Continent names to each country and filtering out non-countries
 
 ```{r}
+#| results: 'asis'
+
 democracy_data <- democracy_data |> 
   mutate(
     continent = case_when(
@@ -180,6 +184,8 @@ democracy_data <- democracy_data |>
 ## Communist countries by Continent
 
 ```{r}
+#| results: 'asis'
+
 communist_countries <- democracy_data |> 
   filter(is_communist == TRUE) |> 
   group_by(country_name, continent) |> 
@@ -208,6 +214,8 @@ ggplot(communist_summary, aes(x = continent, y = total_communist_countries, fill
 ## Percent of Countries that are Communist by Continent
 
 ```{r}
+#| results: 'asis'
+
 percent_communist <- function(cont){
   democracy_data |>
     filter(continent == cont) |>
