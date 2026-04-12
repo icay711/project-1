@@ -252,3 +252,7 @@ ggplot(pct_table, aes(x = continent, y = pct_communist, fill = continent)) +
        fill = "Continent", title = "Percent of Countries that have been Communist by Continent")
 
 ```
+
+Europe, Asia, and Africa have the highest proportion of countries that have been communist.
+
+
