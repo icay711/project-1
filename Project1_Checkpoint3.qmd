@@ -20,6 +20,7 @@ library(jsonlite)
 library(tidyjson)
 library(glue)
 library(gt)
+library(countrycode)
 
 democracy_data <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2024/2024-11-05/democracy_data.csv')
 ```
@@ -82,6 +83,16 @@ democracy_data <- democracy_data |>
 ```
 
 
+
+## Research Questions
+
+- Are certain political ideologies more popular among higher/lower GDP countries?
+
+- What is the association between the regime category and population of a country?
+
+- Do higher/lower population countries prefer certain political ideologies?
+
+
 ## API
 
 ```{r}
@@ -93,6 +104,25 @@ democracy_data <- democracy_data |>
 
 
 ```
+
+
+
+
+
+
+two new country-level data sources
+
+Stat 431: One of these must be acquired using APIs or webscraping
+
+Stat 541: One of these must be acquired using APIs, the other using webscraping.
+
+descriptions of each of the new datasets
+
+a “meta” dataset containing all the acquired data (joined together)
+
+at least two data summaries OR visualizations incorporating the additional country-level data
+
+
 
 ## Data Scraping
 
@@ -113,31 +143,96 @@ pop_data <- populations |>
   mutate(
     Country    = trimws(Country),
     Population = as.numeric(gsub("[^0-9]", "", Population))  # strip anything that isn't a digit
-  ) %>%
+  ) |>
   filter(!is.na(Population))
 pop_data
 
 ```
 
-```{r}
-#| label: get-info-from-page
+# 2020 Country Population Data
 
-get_info_from_page <- function(page, css_selector, node, extract = "text") {
-  
-  # Grab the CSS and node elements from the page
-  elements <- page %>%
-    html_elements(css_selector) %>%
-    html_element(node)
-  
-  
-  if (extract == "text") {
-    # Extract the text from the element and trim it
-    html_text(elements, trim = TRUE)
-  } else {
-    # Extract what is specified
-    html_attr(elements, extract)
-  }
-}
+```{r}
+#| label: country-data
+
+pop_data <- pop_data |>
+  mutate(
+    iso3c = countrycode(Country, 
+                        origin = "country.name", 
+                        destination = "iso3c"
+                        ))
+
+democracy_data_2020 <- democracy_data |>
+  filter(year == 2020) |>
+  mutate(
+    iso3c = countrycode(country_name, 
+                        origin = "country.name", 
+                        destination = "iso3c"
+                        ))
+
+# Now join based on iso3c country code
+country_data <- pop_data |>
+  inner_join(democracy_data_2020, 
+             by = "iso3c")
+country_data
 
 ```
+
+# Box-plots for the Relationship Between Categorical Variables and Population
+
+```{r}
+
+plot_pop_by_category <- function(cat_var) {
+  ggplot(country_data, aes(x = {{ cat_var }}, y = Population, fill = {{ cat_var }})) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.6) +
+    geom_jitter(width = 0.2, size = 1.5, alpha = 0.7) +
+    scale_y_log10(labels = scales::comma) +
+    labs(
+      title = paste("Country Population by", deparse(substitute(cat_var))),
+      x     = deparse(substitute(cat_var)),
+      y     = "Population (log scale)"
+    ) +
+    theme_minimal()
+}
+
+plot_pop_by_category(regime_category)
+plot_pop_by_category(is_communist)
+plot_pop_by_category(is_democracy)
+plot_pop_by_category(is_monarchy)
+
+```
+
+
+
+```{r}
+
+summarize_pop_by_category <- function(cat_var) {
+  country_data |>
+    group_by({{ cat_var }}) |>
+    summarize(
+      n          = n(),
+      mean_pop   = mean(Population, na.rm = TRUE),
+      median_pop = median(Population, na.rm = TRUE),
+      sd_pop     = sd(Population, na.rm = TRUE),
+      min_pop    = min(Population, na.rm = TRUE),
+      max_pop    = max(Population, na.rm = TRUE),
+      .groups    = "drop"
+    ) |>
+    arrange(desc(median_pop))
+}
+
+summarize_pop_by_category(regime_category)
+summarize_pop_by_category(is_communist)
+summarize_pop_by_category(is_democracy)
+summarize_pop_by_category(is_monarchy)
+
+```
+
+
+
+
+
+
+
+
+
 
