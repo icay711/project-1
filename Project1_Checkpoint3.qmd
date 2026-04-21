@@ -6,6 +6,8 @@ authors:
   - name: "Nico Ragasa"
 format: html
 editor: visual
+execute: 
+  warning: false
 ---
 
 ## Data Set Up
@@ -91,6 +93,7 @@ democracy_data <- democracy_data |>
 
 -   Do higher/lower population countries prefer certain political ideologies?
 
+<<<<<<< HEAD
 ## API
 
 ```{r}
@@ -102,6 +105,9 @@ democracy_data <- democracy_data |>
 
 
 ```
+=======
+## To-Do
+>>>>>>> 26985ff65e91667ecb8cedd3bb1041714ca8cd3b
 
 two new country-level data sources
 
@@ -215,3 +221,65 @@ summarize_pop_by_category(is_democracy)
 summarize_pop_by_category(is_monarchy)
 
 ```
+<<<<<<< HEAD
+=======
+
+## API
+
+```{r}
+#| label: country-api
+
+# Obtain 2020 GDP in USD for inputted country
+get_gdp_2020 <- function(country, key = my_key)
+  {
+  
+  # Store url to access API with country and key queries
+  url <- glue("https://api.api-ninjas.com/v1/gdp?year=2020;country={country};X-Api-Key={key}")
+  
+  # Temporarily store JSON data safely
+  my_data <- safely(fromJSON)(url)
+  
+  # Check if JSON was successfully obtained
+  if (is.null(my_data$result) |
+      length(my_data$result) == 0) {
+    return(NA)
+  } else {
+    return(my_data$result$gdp_nominal)
+  }
+}
+
+```
+
+```{r}
+#| echo: false
+my_key <- "Zk9p4D2UR8cKVCa1GKMhJgqnWRTzotRYLJOlagkr"
+```
+
+```{r}
+#| eval: false
+# We used a personal API key stored as "my_key"
+
+# Get GDP for all countries
+gdps <- map_dbl(.x = country_data$iso3c, .f = get_gdp)
+
+# Store GDP with country code as a tibble
+country_gdps <- tibble(iso3c = country_data$iso3c, GDP = gdps)
+
+# Save tibble as a csv
+write.csv(country_gdps, file = "country_gdps.csv")
+```
+
+```{r}
+# Read in csv GDP data
+gdp_data <- read.csv("country_gdps.csv")
+gdp_data <- gdp_data |>
+  select(-X)
+
+# Combine GDP with aggregate 2020 data
+country_meta_data <- country_data |>
+  inner_join(gdp_data, 
+             by = "iso3c")
+
+country_meta_data
+```
+>>>>>>> 26985ff65e91667ecb8cedd3bb1041714ca8cd3b
