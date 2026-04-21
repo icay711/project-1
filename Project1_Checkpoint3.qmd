@@ -24,6 +24,7 @@ library(countrycode)
 
 democracy_data <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2024/2024-11-05/democracy_data.csv')
 ```
+
 ## Assigning Continent names to each country and filtering out non-countries
 
 ```{r}
@@ -82,33 +83,15 @@ democracy_data <- democracy_data |>
   filter(!is.na(continent))
 ```
 
-
-
 ## Research Questions
 
-- Are certain political ideologies more popular among higher/lower GDP countries?
+-   Are certain political ideologies more popular among higher/lower GDP countries?
 
-- What is the association between the regime category and population of a country?
+-   What is the association between the regime category and population of a country?
 
-- Do higher/lower population countries prefer certain political ideologies?
+-   Do higher/lower population countries prefer certain political ideologies?
 
-
-## API
-
-```{r}
-#| label: country-api
-
-
-
-
-
-
-```
-
-
-
-
-
+## To-Do
 
 two new country-level data sources
 
@@ -121,8 +104,6 @@ descriptions of each of the new datasets
 a “meta” dataset containing all the acquired data (joined together)
 
 at least two data summaries OR visualizations incorporating the additional country-level data
-
-
 
 ## Data Scraping
 
@@ -201,8 +182,6 @@ plot_pop_by_category(is_monarchy)
 
 ```
 
-
-
 ```{r}
 
 summarize_pop_by_category <- function(cat_var) {
@@ -227,12 +206,46 @@ summarize_pop_by_category(is_monarchy)
 
 ```
 
+## API
 
+```{r}
+#| label: country-api
 
+get_gdp <- function(country, key = my_key)
+  {
+  
+  url <- glue("https://api.api-ninjas.com/v1/gdp?year=2020;country={country};X-Api-Key={key}")
+  my_data <- safely(fromJSON)(url)
+  
+  if (is.null(my_data$result) |
+      length(my_data$result) == 0) {
+    return(NA)
+  } else {
+    return(my_data$result$gdp_nominal)
+  }
+}
 
+```
 
+```{r}
+my_key <- "Zk9p4D2UR8cKVCa1GKMhJgqnWRTzotRYLJOlagkr"
 
+gdps <- map_dbl(.x = country_data$iso3c, .f = get_gdp)
 
+country_gdps <- tibble(iso3c = country_data$iso3c, GDP = gdps)
 
+write.csv(country_gdps, file = "country_gdps.csv")
 
+```
 
+```{r}
+gdp_data <- read.csv("country_gdps.csv")
+gdp_data <- gdp_data |>
+  select(-"X")
+
+country_meta_data <- country_data |>
+  inner_join(gdp_data, 
+             by = "iso3c")
+
+country_meta_data
+```

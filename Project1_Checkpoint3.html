@@ -69,7 +69,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="Project1_Checkpoint3_files/libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="Project1_Checkpoint3_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="Project1_Checkpoint3_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="Project1_Checkpoint3_files/libs/bootstrap/bootstrap-d6a003b94517c951b2d65075d42fb01b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="Project1_Checkpoint3_files/libs/bootstrap/bootstrap-9e3ffae467580fdb927a41352e75a2e0.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
 
 </head>
@@ -185,8 +185,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>Do higher/lower population countries prefer certain political ideologies?</p></li>
 </ul>
 </section>
-<section id="api" class="level2">
-<h2 class="anchored" data-anchor-id="api">API</h2>
+<section id="to-do" class="level2">
+<h2 class="anchored" data-anchor-id="to-do">To-Do</h2>
 <p>two new country-level data sources</p>
 <p>Stat 431: One of these must be acquired using APIs or webscraping</p>
 <p>Stat 541: One of these must be acquired using APIs, the other using webscraping.</p>
@@ -402,6 +402,70 @@ To fix unmatched values, please use the `custom_match` argument. If you think th
 3 NA              1   616500      616500        NA   616500     616500</code></pre>
 </div>
 </div>
+<section id="api" class="level2">
+<h2 class="anchored" data-anchor-id="api">API</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>get_gdp <span class="ot">&lt;-</span> <span class="cf">function</span>(country, <span class="at">key =</span> my_key)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  {</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  url <span class="ot">&lt;-</span> <span class="fu">glue</span>(<span class="st">"https://api.api-ninjas.com/v1/gdp?year=2020;country={country};X-Api-Key={key}"</span>)</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  my_data <span class="ot">&lt;-</span> <span class="fu">safely</span>(fromJSON)(url)</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(my_data<span class="sc">$</span>result) <span class="sc">|</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">length</span>(my_data<span class="sc">$</span>result) <span class="sc">==</span> <span class="dv">0</span>) {</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NA</span>)</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(my_data<span class="sc">$</span>result<span class="sc">$</span>gdp_nominal)</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>my_key <span class="ot">&lt;-</span> <span class="st">"Zk9p4D2UR8cKVCa1GKMhJgqnWRTzotRYLJOlagkr"</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>gdps <span class="ot">&lt;-</span> <span class="fu">map_dbl</span>(<span class="at">.x =</span> country_data<span class="sc">$</span>iso3c, <span class="at">.f =</span> get_gdp)</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>country_gdps <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">iso3c =</span> country_data<span class="sc">$</span>iso3c, <span class="at">GDP =</span> gdps)</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(country_gdps, <span class="at">file =</span> <span class="st">"country_gdps.csv"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>gdp_data <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"country_gdps.csv"</span>)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>country_meta_data <span class="ot">&lt;-</span> country_data <span class="sc">|&gt;</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">inner_join</span>(gdp_data, </span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>             <span class="at">by =</span> <span class="st">"iso3c"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in inner_join(country_data, gdp_data, by = "iso3c"): Detected an unexpected many-to-many relationship between `x` and `y`.
+ℹ Row 157 of `x` matches multiple rows in `y`.
+ℹ Row 157 of `y` matches multiple rows in `x`.
+ℹ If a many-to-many relationship is expected, set `relationship =
+  "many-to-many"` to silence this warning.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>country_meta_data</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 194 × 49
+   Country       Population iso3c country_name  country_code  year
+   &lt;chr&gt;              &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;         &lt;chr&gt;        &lt;dbl&gt;
+ 1 India         1417492000 IND   India         IND           2020
+ 2 China         1404890000 CHN   China         CHN           2020
+ 3 United States  341784857 USA   United States USA           2020
+ 4 Indonesia      288315089 IDN   Indonesia     IDN           2020
+ 5 Pakistan       241499431 PAK   Pakistan      PAK           2020
+ 6 Nigeria        223800000 NGA   Nigeria       NGA           2020
+ 7 Brazil         213421037 BRA   Brazil        BRA           2020
+ 8 Bangladesh     169828911 BGD   Bangladesh    BGD           2020
+ 9 Russia         146028325 RUS   Russia        RUS           2020
+10 Mexico         131001723 MEX   Mexico        MEX           2020
+# ℹ 184 more rows
+# ℹ 43 more variables: regime_category_index &lt;dbl&gt;, regime_category &lt;chr&gt;,
+#   is_monarchy &lt;lgl&gt;, is_commonwealth &lt;lgl&gt;, monarch_name &lt;chr&gt;,
+#   monarch_accession_year &lt;dbl&gt;, monarch_birthyear &lt;dbl&gt;,
+#   is_female_monarch &lt;lgl&gt;, is_democracy &lt;lgl&gt;, is_presidential &lt;lgl&gt;,
+#   president_name &lt;chr&gt;, president_accesion_year &lt;dbl&gt;,
+#   president_birthyear &lt;dbl&gt;, is_interim_phase &lt;lgl&gt;, …</code></pre>
+</div>
+</div>
+</section>
 </section>
 
 </main>
