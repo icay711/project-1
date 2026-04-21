@@ -465,8 +465,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </section>
-<section id="box-plots-for-the-relationship-between-categorical-variables-and-gdp" class="level1">
-<h1>Box-plots for the Relationship Between Categorical Variables and GDP</h1>
+<section id="box-plots-for-the-relationship-between-categorical-variables-and-gdp-in-usd-in-billions" class="level1">
+<h1>Box-plots for the Relationship Between Categorical Variables and GDP in USD (in Billions)</h1>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>plot_gdp_by_category <span class="ot">&lt;-</span> <span class="cf">function</span>(cat_var) {</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(country_meta_data, <span class="fu">aes</span>(<span class="at">y =</span> {{ cat_var }}, <span class="at">x =</span> GDP, <span class="at">fill =</span> {{ cat_var }})) <span class="sc">+</span></span>
@@ -474,7 +474,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_jitter</span>(<span class="at">width =</span> <span class="fl">0.2</span>, <span class="at">size =</span> <span class="fl">1.5</span>, <span class="at">alpha =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
 <span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_x_log10</span>(<span class="at">labels =</span> scales<span class="sc">::</span>comma) <span class="sc">+</span></span>
 <span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(</span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="fu">paste</span>(<span class="st">"Country GDP in USD by"</span>, <span class="fu">deparse</span>(<span class="fu">substitute</span>(cat_var))),</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="fu">paste</span>(<span class="st">"Country GDP in USD (in Billions) by"</span>, <span class="fu">deparse</span>(<span class="fu">substitute</span>(cat_var))),</span>
 <span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">y     =</span> <span class="fu">deparse</span>(<span class="fu">substitute</span>(cat_var)),</span>
 <span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">x     =</span> <span class="st">"GDP (log scale)"</span></span>
 <span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">+</span></span>
@@ -515,8 +515,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </section>
-<section id="summary-statistics-for-the-relationship-between-categorical-variables-and-gdp" class="level1">
-<h1>Summary Statistics for the Relationship Between Categorical Variables and GDP</h1>
+<section id="summary-statistics-for-the-relationship-between-categorical-variables-and-gdp-in-usd-in-billions" class="level1">
+<h1>Summary Statistics for the Relationship Between Categorical Variables and GDP in USD (in Billions)</h1>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>summarize_gdp_by_category <span class="ot">&lt;-</span> <span class="cf">function</span>(cat_var) {</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  country_meta_data <span class="sc">|&gt;</span></span>
