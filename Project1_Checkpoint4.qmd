@@ -18,13 +18,13 @@ execute:
 ```{r}
 #| warning: false
 library(tidyverse)
+library(ggplot2)
+library(ggridges)
 library(kableExtra)
 library(knitr)
 library(httr)
 library(jsonlite)
 library(tidyjson)
-library(glue)
-library(gt)
 library(countrycode)
 
 democracy_data <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2024/2024-11-05/democracy_data.csv')
@@ -168,7 +168,8 @@ plot_pop_by_category <- function(cat_var) {
       title = paste("Country Population by", deparse(substitute(cat_var))),
       y     = deparse(substitute(cat_var)),
       x     = "Population (log scale)"
-    ) +
+    ) + 
+    scale_fill_discrete() +
     theme_minimal()
 }
 
@@ -176,6 +177,28 @@ plot_pop_by_category(regime_category)
 plot_pop_by_category(is_communist)
 plot_pop_by_category(is_democracy)
 plot_pop_by_category(is_monarchy)
+
+```
+
+# Ridgeline Plot for the Relationship between Regime Category and Population
+
+```{r}
+
+country_data |>
+  filter(!is.na(regime_category)) |> 
+  ggplot(aes(x = Population, 
+             y = regime_category, 
+             fill = regime_category)) + 
+  geom_density_ridges(alpha = 0.5) +
+  scale_x_log10(labels = scales::comma) +
+  theme_light() + 
+  theme(legend.position = "none") +
+  labs(
+    title = "Population Ridgeline Densities by Regime Category",
+    x = "Population (log scale)",
+    y = ""
+  )
+  
 
 ```
 
