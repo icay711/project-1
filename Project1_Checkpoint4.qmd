@@ -160,7 +160,9 @@ country_data
 ```{r}
 
 plot_pop_by_category <- function(cat_var) {
-  ggplot(country_data, aes(y = {{ cat_var }}, x = Population, fill = {{ cat_var }})) +
+  country_data |>
+    filter(!is.na({{ cat_var }})) |>
+  ggplot(aes(y = {{ cat_var }}, x = Population, fill = {{ cat_var }})) +
     geom_boxplot(outlier.shape = NA, alpha = 0.6) +
     geom_jitter(width = 0.2, size = 1.5, alpha = 0.7) +
     scale_x_log10(labels = scales::comma) +
@@ -272,7 +274,9 @@ country_meta_data
 
 ```{r}
 plot_gdp_by_category <- function(cat_var) {
-  ggplot(country_meta_data, aes(y = {{ cat_var }}, x = GDP, fill = {{ cat_var }})) +
+  country_meta_data |>
+    filter(!is.na({{ cat_var }})) |>
+  ggplot(aes(y = {{ cat_var }}, x = GDP, fill = {{ cat_var }})) +
     geom_boxplot(outlier.shape = NA, alpha = 0.6) +
     geom_jitter(width = 0.2, size = 1.5, alpha = 0.7) +
     scale_x_log10(labels = scales::comma) +
@@ -313,5 +317,46 @@ summarize_gdp_by_category(regime_category)
 summarize_gdp_by_category(is_communist)
 summarize_gdp_by_category(is_democracy)
 summarize_gdp_by_category(is_monarchy)
+
+```
+
+```{r}
+country_meta_data |>
+  filter(!is.na(regime_category)) |>
+  group_by(regime_category) |>
+  summarize(n = n(),
+            mean_GDP = mean(GDP, na.rm = TRUE),
+            med_GDP = median(GDP, na.rm = TRUE),
+            sd_GDP = sd(GDP, na.rm = TRUE),
+            se_GDP = sd_GDP / n,
+            min_gdp = min(GDP, na.rm = TRUE),
+            max_gdp = max(GDP, na.rm = TRUE),
+            .groups    = "drop"
+  ) |>
+  arrange(desc(mean_GDP)) |>
+  gt() |>
+  fmt_currency(columns = 3:8, decimals = 2) |>
+  tab_spanner(label = "Category Breakdown",
+              columns = 1:2) |>
+  tab_spanner(label = "Midpoints",
+              columns = 3:4) |>
+  tab_spanner(label = "Variation",
+              columns = 5:6) |>
+  tab_spanner(label = "Range",
+              columns = 7:8) |>
+  cols_label(regime_category = "Regime Type",
+             n = "Count",
+             mean_GDP = "Mean",
+             med_GDP = "Median",
+             sd_GDP = "Standard Deviation",
+             se_GDP = "Standard Error",
+             min_gdp = "Minimum",
+             max_gdp = "Maximum") |>
+  data_color(method = "numeric",
+             palette = "Blues") |>
+  tab_header(title = "Table of GDP Statistics by Regime Category",
+             subtitle = "(in USD in Billions)")
+
+?tab_style
 
 ```
