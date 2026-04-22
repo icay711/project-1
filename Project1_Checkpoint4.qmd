@@ -1,0 +1,317 @@
+---
+title: "Project 1 Checkpoint 4"
+authors: 
+  - name: "Ian Cay"
+  - name: "Drew Cloughley"
+  - name: "Nico Ragasa"
+format: html
+embed-resources: true
+code-fold: true
+theme: flatly
+editor: visual
+execute: 
+  warning: false
+---
+
+## Data Set Up
+
+```{r}
+#| warning: false
+library(tidyverse)
+library(kableExtra)
+library(knitr)
+library(httr)
+library(jsonlite)
+library(tidyjson)
+library(glue)
+library(gt)
+library(countrycode)
+
+democracy_data <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2024/2024-11-05/democracy_data.csv')
+```
+
+## Assigning Continent names to each country and filtering out non-countries
+
+```{r}
+#| results: 'asis'
+
+democracy_data <- democracy_data |> 
+  mutate(
+    continent = case_when(
+      
+      country_code %in% c(
+        "DZA","AGO","BEN","BWA","BFA","BDI","CMR","CPV","CAF","TCD","COM","COG","COD",
+        "CIV","DJI","EGY","GNQ","ERI","SWZ","ETH","GAB","GMB","GHA","GIN","GNB","KEN",
+        "LSO","LBR","LBY","MDG","MWI","MLI","MRT","MUS","MAR","MOZ","NAM","NER","NGA",
+        "RWA","STP","SEN","SYC","SLE","SOM","ZAF","SSD","SDN","TZA","TGO","TUN","UGA",
+        "ZMB","ZWE","ZAR"
+      ) ~ "Africa",
+
+      # North America (incl. Caribbean)
+      country_code %in% c(
+        "CAN","USA","MEX","BHS","BRB","CUB","DMA","DOM","GRD","HTI","JAM",
+        "KNA","LCA","VCT","TTO","ATG"
+      ) ~ "North America",
+
+      # Central America
+      country_code %in% c(
+        "BLZ","CRI","SLV","GTM","HND","NIC","PAN"
+      ) ~ "Central America",
+
+      # South America
+      country_code %in% c(
+        "ARG","BOL","BRA","CHL","COL","ECU","GUY","PRY","PER","SUR","URY","VEN"
+      ) ~ "South America",
+
+      country_code %in% c(
+        "AFG","ARM","AZE","BHR","BGD","BTN","BRN","KHM","CHN","CYP","GEO","IND","IDN",
+        "IRN","IRQ","ISR","JPN","JOR","KAZ","KWT","KGZ","LAO","LBN","MYS","MDV","MNG",
+        "MMR","NPL","PRK","OMN","PAK","PSE","PHL","QAT","SAU","SGP","KOR","LKA","SYR",
+        "TWN","TJK","THA","TLS","TUR","TKM","ARE","UZB","VNM","YEM"
+      ) ~ "Asia",
+
+      country_code %in% c(
+        "ALB","AND","AUT","BLR","BEL","BIH","BGR","HRV","CYP","CZE","DNK","EST","FIN",
+        "FRA","DEU","GRC","HUN","ISL","IRL","ITA","LVA","LIE","LTU","LUX","MLT","MDA",
+        "MCO","MNE","NLD","MKD","NOR","POL","PRT","ROU","RUS","SMR","SRB","SVK","SVN",
+        "ESP","SWE","CHE","UKR","GBR","VAT","GER","ROM"
+      ) ~ "Europe",
+
+      country_code %in% c(
+        "AUS","FJI","KIR","MHL","FSM","NRU","NZL","PLW","PNG","WSM","SLB","TON","TUV",
+        "VUT","NUR"
+      ) ~ "Oceania",
+
+      TRUE ~ NA_character_
+    )
+  ) |> 
+  filter(!is.na(continent))
+```
+
+code options - be smart about output
+
+## Research Questions
+
+-   Are certain political ideologies more popular among higher/lower GDP countries?
+
+-   What is the association between the regime category and population of a country?
+
+-   Do higher/lower population countries prefer certain political ideologies?
+
+## To-Do
+
+two professionally formatted visualizations every visualization must have alternative (alt) text, non-default colors, a non-default theme, and clear labels at least one visualization must use a more complex geometry (e.g., geom_segment(), geom_density_ridge() geom_ribbon(), geom_tile(), geom_hex()) fits one statistical model addressing one of the research questions posed professionally formats the output of that model to communicate the results Formatted values (e.g., decimals, percentages, currencies) Boldface headers Captions
+
+## Web Scraping - Population
+
+```{r}
+#| label: population-table
+
+library(rvest)
+
+populations <- read_html("https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population")
+
+pop_data <- populations |>
+  html_element("table.wikitable") |>
+  html_table(fill = TRUE) |>
+  select(
+    Country = 1, 
+    Population = 2
+    ) |>
+  mutate(
+    Country    = trimws(Country),
+    Population = as.numeric(gsub("[^0-9]", "", Population))  # strip anything that isn't a digit
+  ) |>
+  filter(!is.na(Population))
+pop_data
+
+```
+
+# 2020 Country Population Data
+
+```{r}
+#| label: country-data
+
+pop_data <- pop_data |>
+  mutate(
+    iso3c = countrycode(Country, 
+                        origin = "country.name", 
+                        destination = "iso3c"
+                        ))
+
+democracy_data_2020 <- democracy_data |>
+  filter(year == 2020) |>
+  mutate(
+    iso3c = countrycode(country_name, 
+                        origin = "country.name", 
+                        destination = "iso3c"
+                        ))
+
+# Now join based on iso3c country code
+country_data <- pop_data |>
+  inner_join(democracy_data_2020, 
+             by = "iso3c")
+country_data
+
+```
+
+# Box-plots for the Relationship Between Categorical Variables and Population
+
+```{r}
+
+plot_pop_by_category <- function(cat_var) {
+  ggplot(country_data, aes(y = {{ cat_var }}, x = Population, fill = {{ cat_var }})) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.6) +
+    geom_jitter(width = 0.2, size = 1.5, alpha = 0.7) +
+    scale_x_log10(labels = scales::comma) +
+    labs(
+      title = paste("Country Population by", deparse(substitute(cat_var))),
+      y     = deparse(substitute(cat_var)),
+      x     = "Population (log scale)"
+    ) +
+    theme_minimal()
+}
+
+plot_pop_by_category(regime_category)
+plot_pop_by_category(is_communist)
+plot_pop_by_category(is_democracy)
+plot_pop_by_category(is_monarchy)
+
+```
+
+# Summary Statistics for the Relationship Between Categorical Variables and Population
+
+```{r}
+
+summarize_pop_by_category <- function(cat_var) {
+  country_data |>
+    group_by({{ cat_var }}) |>
+    summarize(
+      n          = n(),
+      mean_pop   = mean(Population, na.rm = TRUE),
+      median_pop = median(Population, na.rm = TRUE),
+      sd_pop     = sd(Population, na.rm = TRUE),
+      min_pop    = min(Population, na.rm = TRUE),
+      max_pop    = max(Population, na.rm = TRUE),
+      .groups    = "drop"
+    ) |>
+    arrange(desc(median_pop))
+}
+
+summarize_pop_by_category(regime_category)
+summarize_pop_by_category(is_communist)
+summarize_pop_by_category(is_democracy)
+summarize_pop_by_category(is_monarchy)
+
+```
+
+## API - GDP in USD
+
+```{r}
+#| label: country-api
+
+# Obtain 2020 GDP in USD for inputted country
+get_gdp_2020 <- function(country, key = my_key)
+  {
+  
+  # Store url to access API with country and key queries
+  url <- glue("https://api.api-ninjas.com/v1/gdp?year=2020;country={country};X-Api-Key={key}")
+  
+  # Temporarily store JSON data safely
+  my_data <- safely(fromJSON)(url)
+  
+  # Check if JSON was successfully obtained
+  if (is.null(my_data$result) |
+      length(my_data$result) == 0) {
+    return(NA)
+  } else {
+    return(my_data$result$gdp_nominal)
+  }
+}
+
+```
+
+```{r}
+#| echo: false
+my_key <- "Zk9p4D2UR8cKVCa1GKMhJgqnWRTzotRYLJOlagkr"
+```
+
+# Store Country GDPs in USD
+
+```{r}
+#| eval: false
+# We used a personal API key stored as "my_key"
+
+# Get GDP for all countries
+gdps <- map_dbl(.x = country_data$iso3c, .f = get_gdp)
+
+# Store GDP with country code as a tibble
+country_gdps <- tibble(iso3c = country_data$iso3c, GDP = gdps)
+
+# Save tibble as a csv
+write.csv(country_gdps, file = "country_gdps.csv")
+```
+
+# Create Countries Meta Dataset for 2020
+
+```{r}
+# Read in csv GDP data
+gdp_data <- read.csv("country_gdps.csv")
+gdp_data <- gdp_data |>
+  select(-X)
+
+# Combine GDP with aggregate 2020 data
+country_meta_data <- country_data |>
+  inner_join(gdp_data, 
+             by = "iso3c")
+
+country_meta_data
+```
+
+# Box-plots for the Relationship Between Categorical Variables and GDP in USD (in Billions)
+
+```{r}
+plot_gdp_by_category <- function(cat_var) {
+  ggplot(country_meta_data, aes(y = {{ cat_var }}, x = GDP, fill = {{ cat_var }})) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.6) +
+    geom_jitter(width = 0.2, size = 1.5, alpha = 0.7) +
+    scale_x_log10(labels = scales::comma) +
+    labs(
+      title = paste("Country GDP in USD (in Billions) by", deparse(substitute(cat_var))),
+      y     = deparse(substitute(cat_var)),
+      x     = "GDP (log scale)"
+    ) +
+    theme_minimal()
+}
+
+plot_gdp_by_category(regime_category)
+plot_gdp_by_category(is_communist)
+plot_gdp_by_category(is_democracy)
+plot_gdp_by_category(is_monarchy)
+
+```
+
+# Summary Statistics for the Relationship Between Categorical Variables and GDP in USD (in Billions)
+
+```{r}
+summarize_gdp_by_category <- function(cat_var) {
+  country_meta_data |>
+    group_by({{ cat_var }}) |>
+    summarize(
+      n          = n(),
+      mean_gdp   = mean(GDP, na.rm = TRUE),
+      median_gdp = median(GDP, na.rm = TRUE),
+      sd_gdp     = sd(GDP, na.rm = TRUE),
+      min_gdp    = min(GDP, na.rm = TRUE),
+      max_gdp    = max(GDP, na.rm = TRUE),
+      .groups    = "drop"
+    ) |>
+    arrange(desc(median_gdp))
+}
+
+summarize_gdp_by_category(regime_category)
+summarize_gdp_by_category(is_communist)
+summarize_gdp_by_category(is_democracy)
+summarize_gdp_by_category(is_monarchy)
+
+```
