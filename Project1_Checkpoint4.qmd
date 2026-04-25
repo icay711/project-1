@@ -88,8 +88,6 @@ democracy_data <- democracy_data |>
   filter(!is.na(continent))
 ```
 
-code options - be smart about output
-
 ## Research Questions
 
 -   Are certain political ideologies more popular among higher/lower GDP countries?
@@ -155,50 +153,34 @@ country_data
 
 ```
 
-# Box-plots for the Relationship Between Categorical Variables and Population
-
-```{r}
-
-plot_pop_by_category <- function(cat_var) {
-  ggplot(country_data, aes(y = {{ cat_var }}, x = Population, fill = {{ cat_var }})) +
-    geom_boxplot(outlier.shape = NA, alpha = 0.6) +
-    geom_jitter(width = 0.2, size = 1.5, alpha = 0.7) +
-    scale_x_log10(labels = scales::comma) +
-    labs(
-      title = paste("Country Population by", deparse(substitute(cat_var))),
-      y     = deparse(substitute(cat_var)),
-      x     = "Population (log scale)"
-    ) + 
-    scale_fill_discrete() +
-    theme_minimal()
-}
-
-plot_pop_by_category(regime_category)
-plot_pop_by_category(is_communist)
-plot_pop_by_category(is_democracy)
-plot_pop_by_category(is_monarchy)
-
-```
-
 # Ridgeline Plot for the Relationship between Regime Category and Population
 
 ```{r}
 
 country_data |>
-  filter(!is.na(regime_category)) |> 
+  filter(!is.na(is_monarchy)) |> 
   ggplot(aes(x = Population, 
-             y = regime_category, 
-             fill = regime_category)) + 
+             y = is_monarchy, 
+             fill = is_monarchy)) + 
   geom_density_ridges(alpha = 0.5) +
   scale_x_log10(labels = scales::comma) +
   theme_light() + 
-  theme(legend.position = "none") +
+  theme(legend.position = "none",
+        text = element_text(family = "Times", size = 12)) +
+  scale_fill_brewer(palette = "Accent") +
   labs(
-    title = "Population Ridgeline Densities by Regime Category",
+    title = "Population Ridgeline Densities Between Monarchies and Non-monarchies",
     x = "Population (log scale)",
     y = ""
   )
   
+```
+
+# Two-Sample t-test for Population and Communism
+
+```{r}
+
+t.test(Population ~ is_monarchy, data = country_meta_data)
 
 ```
 
@@ -254,26 +236,6 @@ get_gdp_2020 <- function(country, key = my_key)
 
 ```
 
-```{r}
-#| echo: false
-my_key <- "Zk9p4D2UR8cKVCa1GKMhJgqnWRTzotRYLJOlagkr"
-```
-
-# Store Country GDPs in USD
-
-```{r}
-#| eval: false
-# We used a personal API key stored as "my_key"
-
-# Get GDP for all countries
-gdps <- map_dbl(.x = country_data$iso3c, .f = get_gdp)
-
-# Store GDP with country code as a tibble
-country_gdps <- tibble(iso3c = country_data$iso3c, GDP = gdps)
-
-# Save tibble as a csv
-write.csv(country_gdps, file = "country_gdps.csv")
-```
 
 # Create Countries Meta Dataset for 2020
 
