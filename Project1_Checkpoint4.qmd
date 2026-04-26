@@ -89,8 +89,6 @@ democracy_data <- democracy_data |>
   filter(!is.na(continent))
 ```
 
-code options - be smart about output
-
 ## Research Questions
 
 -   Are certain political ideologies more popular among higher/lower GDP countries?
@@ -98,7 +96,6 @@ code options - be smart about output
 -   What is the association between the regime category and population of a country?
 
 -   Do higher/lower population countries prefer certain political ideologies?
-
 
 ## Web Scraping - Population
 
@@ -202,7 +199,6 @@ plot_pop_by_category(is_monarchy)
 
 ```
 
-
 # Summary Statistics for the Relationship Between Categorical Variables and Population
 
 ```{r}
@@ -287,7 +283,7 @@ summarize_pop_by_category(is_monarchy)
 
 ```
 
-# Statistical Tests for Models between Categorical Variables and Population
+# Statistical Tests for Models Between Categorical Variables and Population
 
 ```{r}
 # Testing assumptions for model between log(Population) and categorical variables 
@@ -311,8 +307,6 @@ pop_assumption_test(is_monarchy)
 
 ```
 
-
-
 ```{r}
 
 # Welch's ANOVA
@@ -328,9 +322,6 @@ t.test(log(Population) ~ is_democracy, data = country_data, var.equal = FALSE)
 wilcox.test(log(Population) ~ is_monarchy, data = country_data)
 
 ```
-
-
-
 
 # Create Countries Meta Dataset for 2020
 
@@ -484,7 +475,7 @@ summarize_gdp_by_category(is_monarchy)
 
 ```
 
-# Statistical Tests for Models between Categorical Variables and GDP
+# Statistical Tests for Models Between Categorical Variables and GDP
 
 ```{r}
 # Testing assumptions for model between log(GDP) and categorical variables 
@@ -523,8 +514,3 @@ t.test(log(GDP) ~ is_democracy, data = country_meta_data, var.equal = FALSE)
 t.test(log(GDP) ~ is_monarchy, data = country_meta_data, var.equal = TRUE)
 
 ```
-
-
-
-
-
