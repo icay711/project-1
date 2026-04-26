@@ -18,13 +18,13 @@ execute:
 ```{r}
 #| warning: false
 library(tidyverse)
-library(ggplot2)
-library(ggridges)
 library(kableExtra)
 library(knitr)
 library(httr)
 library(jsonlite)
 library(tidyjson)
+library(glue)
+library(gt)
 library(countrycode)
 
 democracy_data <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2024/2024-11-05/democracy_data.csv')
@@ -87,6 +87,8 @@ democracy_data <- democracy_data |>
   ) |> 
   filter(!is.na(continent))
 ```
+
+code options - be smart about output
 
 ## Research Questions
 
@@ -153,34 +155,29 @@ country_data
 
 ```
 
-# Ridgeline Plot for the Relationship between Regime Category and Population
+# Box-plots for the Relationship Between Categorical Variables and Population
 
 ```{r}
 
-country_data |>
-  filter(!is.na(is_monarchy)) |> 
-  ggplot(aes(x = Population, 
-             y = is_monarchy, 
-             fill = is_monarchy)) + 
-  geom_density_ridges(alpha = 0.5) +
-  scale_x_log10(labels = scales::comma) +
-  theme_light() + 
-  theme(legend.position = "none",
-        text = element_text(family = "Times", size = 12)) +
-  scale_fill_brewer(palette = "Accent") +
-  labs(
-    title = "Population Ridgeline Densities Between Monarchies and Non-monarchies",
-    x = "Population (log scale)",
-    y = ""
-  )
-  
-```
+plot_pop_by_category <- function(cat_var) {
+  country_data |>
+    filter(!is.na({{ cat_var }})) |>
+  ggplot(aes(y = {{ cat_var }}, x = Population, fill = {{ cat_var }})) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.6) +
+    geom_jitter(width = 0.2, size = 1.5, alpha = 0.7) +
+    scale_x_log10(labels = scales::comma) +
+    labs(
+      title = paste("Country Population by", deparse(substitute(cat_var))),
+      y     = deparse(substitute(cat_var)),
+      x     = "Population (log scale)"
+    ) +
+    theme_minimal()
+}
 
-# Two-Sample t-test for Population and Communism
-
-```{r}
-
-t.test(Population ~ is_monarchy, data = country_meta_data)
+plot_pop_by_category(regime_category)
+plot_pop_by_category(is_communist)
+plot_pop_by_category(is_democracy)
+plot_pop_by_category(is_monarchy)
 
 ```
 
@@ -189,18 +186,65 @@ t.test(Population ~ is_monarchy, data = country_meta_data)
 ```{r}
 
 summarize_pop_by_category <- function(cat_var) {
+  
+  # Store variable names for use inside gt()
+  var_name <- deparse(substitute(cat_var))
+  var_name2 <- recode(var_name,
+                      "regime_category" = "Regime Category",
+                      "is_communist" = "Communist",
+                      "is_democracy" = "Democracy",
+                      "is_monarchy" = "Monarchy",
+                      .default = var_name)
+
   country_data |>
-    group_by({{ cat_var }}) |>
-    summarize(
-      n          = n(),
-      mean_pop   = mean(Population, na.rm = TRUE),
-      median_pop = median(Population, na.rm = TRUE),
-      sd_pop     = sd(Population, na.rm = TRUE),
-      min_pop    = min(Population, na.rm = TRUE),
-      max_pop    = max(Population, na.rm = TRUE),
-      .groups    = "drop"
+    filter(!is.na({{ cat_var }})
     ) |>
-    arrange(desc(median_pop))
+    group_by({{ cat_var }}) |>
+    summarize(n = n(),
+              mean_pop = mean(Population, na.rm = TRUE),
+              med_pop = median(Population, na.rm = TRUE),
+              sd_pop = sd(Population, na.rm = TRUE),
+              se_pop = sd_pop / sqrt(n),
+              min_pop = min(Population, na.rm = TRUE),
+              max_pop = max(Population, na.rm = TRUE),
+              .groups    = "drop"
+    ) |>
+    arrange(desc(mean_pop)) |>
+    gt() |>
+    fmt_number(columns = 3:8,
+                decimals = 2,
+    ) |>
+    tab_spanner(label = "Category Breakdown",
+                columns = 1:2
+    ) |>
+    tab_spanner(label = "Midpoints",
+                columns = 3:4
+    ) |>
+    tab_spanner(label = "Variation",
+                columns = 5:6
+    ) |>
+    tab_spanner(label = "Range",
+                columns = 7:8
+    ) |>
+    cols_label(!!var_name := var_name2,
+               n = "Count",
+               mean_pop = "Mean",
+               med_pop = "Median",
+               sd_pop = "Standard Deviation",
+               se_pop = "Standard Error",
+               min_pop = "Minimum",
+               max_pop = "Maximum"
+    ) |>
+    data_color(method = "numeric",
+               palette = "Blues"
+    ) |>
+    tab_header(title = paste("Table of Population Statistics by", var_name2),
+    ) |>
+    tab_style(style = cell_text(weight = "bold"),
+              locations = cells_column_labels()
+    ) |>
+    tab_footnote(md("*Note 1*: Standard error was calculated as the standard deviation divided by the square root of the sample size.")) |>
+    tab_footnote(md("*Note 2*: Darker blues represent greater values."))
 }
 
 summarize_pop_by_category(regime_category)
@@ -236,6 +280,26 @@ get_gdp_2020 <- function(country, key = my_key)
 
 ```
 
+```{r}
+#| echo: false
+my_key <- "Zk9p4D2UR8cKVCa1GKMhJgqnWRTzotRYLJOlagkr"
+```
+
+# Store Country GDPs in USD
+
+```{r}
+#| eval: false
+# We used a personal API key stored as "my_key"
+
+# Get GDP for all countries
+gdps <- map_dbl(.x = country_data$iso3c, .f = get_gdp)
+
+# Store GDP with country code as a tibble
+country_gdps <- tibble(iso3c = country_data$iso3c, GDP = gdps)
+
+# Save tibble as a csv
+write.csv(country_gdps, file = "country_gdps.csv")
+```
 
 # Create Countries Meta Dataset for 2020
 
@@ -257,7 +321,9 @@ country_meta_data
 
 ```{r}
 plot_gdp_by_category <- function(cat_var) {
-  ggplot(country_meta_data, aes(y = {{ cat_var }}, x = GDP, fill = {{ cat_var }})) +
+  country_meta_data |>
+    filter(!is.na({{ cat_var }})) |>
+  ggplot(aes(y = {{ cat_var }}, x = GDP, fill = {{ cat_var }})) +
     geom_boxplot(outlier.shape = NA, alpha = 0.6) +
     geom_jitter(width = 0.2, size = 1.5, alpha = 0.7) +
     scale_x_log10(labels = scales::comma) +
@@ -279,20 +345,71 @@ plot_gdp_by_category(is_monarchy)
 # Summary Statistics for the Relationship Between Categorical Variables and GDP in USD (in Billions)
 
 ```{r}
+
 summarize_gdp_by_category <- function(cat_var) {
+  
+  # Store variable names for use inside gt()
+  var_name <- deparse(substitute(cat_var))
+  var_name2 <- recode(var_name,
+                      "regime_category" = "Regime Category",
+                      "is_communist" = "Communist",
+                      "is_democracy" = "Democracy",
+                      "is_monarchy" = "Monarchy",
+                      .default = var_name)
+
   country_meta_data |>
-    group_by({{ cat_var }}) |>
-    summarize(
-      n          = n(),
-      mean_gdp   = mean(GDP, na.rm = TRUE),
-      median_gdp = median(GDP, na.rm = TRUE),
-      sd_gdp     = sd(GDP, na.rm = TRUE),
-      min_gdp    = min(GDP, na.rm = TRUE),
-      max_gdp    = max(GDP, na.rm = TRUE),
-      .groups    = "drop"
+    filter(!is.na({{ cat_var }})
     ) |>
-    arrange(desc(median_gdp))
-}
+    group_by({{ cat_var }}) |>
+    summarize(n = n(),
+              mean_GDP = mean(GDP, na.rm = TRUE),
+              med_GDP = median(GDP, na.rm = TRUE),
+              sd_GDP = sd(GDP, na.rm = TRUE),
+              se_GDP = sd_GDP / sqrt(n),
+              min_gdp = min(GDP, na.rm = TRUE),
+              max_gdp = max(GDP, na.rm = TRUE),
+              .groups    = "drop"
+    ) |>
+    arrange(desc(mean_GDP)) |>
+    gt() |>
+    fmt_currency(columns = 3:8,
+                 decimals = 2,
+                 currency = "USD",
+                 placement = "left",
+                 pattern = "{x}B"
+    ) |>
+    tab_spanner(label = "Category Breakdown",
+                columns = 1:2
+    ) |>
+    tab_spanner(label = "Midpoints",
+                columns = 3:4
+    ) |>
+    tab_spanner(label = "Variation",
+                columns = 5:6
+    ) |>
+    tab_spanner(label = "Range",
+                columns = 7:8
+    ) |>
+    cols_label(!!var_name := var_name2,
+               n = "Count",
+               mean_GDP = "Mean",
+               med_GDP = "Median",
+               sd_GDP = "Standard Deviation",
+               se_GDP = "Standard Error",
+               min_gdp = "Minimum",
+               max_gdp = "Maximum"
+    ) |>
+    data_color(method = "numeric",
+               palette = "Blues"
+    ) |>
+    tab_header(title = paste("Table of GDP Statistics by", var_name2),
+               subtitle = "(in USD in Billions)"
+    ) |>
+    tab_style(style = cell_text(weight = "bold"),
+              locations = cells_column_labels()
+    ) |>
+    tab_footnote(md("*Note 1*: Standard error was calculated as the standard deviation divided by the square root of the sample size.")) |>
+    tab_footnote(md("*Note 2*: Darker blues represent greater values."))}
 
 summarize_gdp_by_category(regime_category)
 summarize_gdp_by_category(is_communist)
