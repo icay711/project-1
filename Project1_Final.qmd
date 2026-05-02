@@ -542,11 +542,10 @@ data.frame(
 
 ```
 
-:::{.callout-note}
+::: callout-note
 ## Conclusion and Discussion
 
-The
-
+Both Welch's ANOVA tests do not provide enough evidence that *regime category* and *government type* are significantly associated with a country's GDP in US dollars in billions (p > 0.1). However from our statistical summaries, we observed that presidential democracies have the largest nominal GDP's on average (mean = 776.25B), with military dictatorships having the lowest on average (mean = 73.25B). However, large GDP countries may skew the mean, so the median may be a better indicator of typical GDP. In this case, royal dictatorships have the greatest median nominal GDP (75.91B), with military dictatorships still being the lowest (11.48B). In terms of government type, pure monarchies have the largest median GDP (93.48B), with pure democracies being the lowest (34.36B), aside from *Other* government types. Our ridgeline plots also reveal that distributions of country log(GDP) vary widely from normally distributed, to skewed right (Communist), to bimodal (Democratic Monarchy). Since we cannot conclude that *regime category* nor *government type* are statistically significant predictors of a country's nominal GDP, we suggest that factors such as location, natural resources, and area may be greater correlated to GDP.
 :::
 
 # Research Question 2 Is there an association between certain political ideologies and country populations?
@@ -654,9 +653,8 @@ data.frame(
   tab_footnote(md("At an ⍺ = 0.05 significance level, we have extremely strong evidence that there is an association between the geometric mean population and the government types of countries."))
 ```
 
-:::{.callout-note}
-# Conclusion and Discussion
+::: callout-note
+## Conclusion and Discussion
 
-
-
+Both Welch's ANOVA tests provide very strong evidence that *regime category* and *government type* are significantly associated with a country's population (p < 0.001). Since large population countries may skew the mean, the median is a good indicator of typical country size across regime categories. Civilian dictatorships tend to have the greatest populations (median = 20,093,620), while parliamentary democracies have the smallest (median = 1,818,300). In terms of government type, communist countries have the largest median population by a large margin (25,950,000), with democratic monarchies being the smallest on average (2,116,427). Our ridgeline plots also reveal that distributions of country populations are more similar than distributions of log(GDP), with all distributions being fairly symmetrical. However,  democratic monarchies and communist countries have bimodal features. While distributions are not identical across all political structures and equal variance was not satisfied in the model, *regime category* and *government type* are statistically significant predictors of a country's population, but should be interpretated with caution.
 :::
