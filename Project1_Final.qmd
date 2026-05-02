@@ -103,6 +103,8 @@ country_data <- pop_data |>
 ```{r}
 #| label: country-api
 
+library(glue)
+
 # Obtain 2020 GDP in USD for inputted country
 get_gdp_2020 <- function(country, key = my_key)
   {
@@ -135,7 +137,6 @@ my_key <- "Zk9p4D2UR8cKVCa1GKMhJgqnWRTzotRYLJOlagkr"
 ```{r}
 #| eval: false
 # We used a personal API key stored as "my_key"
-library(glue)
 
 # Get GDP for all countries
 gdps <- map_dbl(.x = country_data$iso3c, .f = get_gdp_2020)
