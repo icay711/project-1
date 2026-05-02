@@ -1,0 +1,651 @@
+---
+title: "Project 1 Final Report"
+authors: 
+  - name: "Ian Cay"
+  - name: "Drew Cloughley"
+  - name: "Nico Ragasa"
+format: html
+embed-resources: true
+code-fold: true
+theme: flatly
+editor: visual
+execute: 
+  warning: false
+---
+
+# Context of The Data
+
+## *Geopolitics: Government Types*
+
+The primary dataset *Democracy and Dictatorship* was collected by Jon Harmon, and published for *tidytuesday* on GitHub. Data was collected on each global country from 1950-2020, and each observation corresponds to a single country for an individual year. Harmon collected the data in 2024, and published it to *tidytuesday* on November 5, 2024. The dataset contains information from 1950 to 2020. Harmon obtained the data from databases created by Christian Bjørnskov and Martin Rode in 2020. The original article *Regime types and regime change: A new dataset on democracy, coups, and political institutions* by Bjørnskov and Rode was published on February 4, 2019. This data allows us to compare political ideologies, leader information, important dates, and government systems across global countries from 1950 to 2020, however our analyze focuses in on 2020 to analyze new, associated variables. We added a variable *continent* to represent each country's respective continent by grouping country codes within each continent.
+
+## *Country Population Data*
+
+The data for country populations in 2020 was webscraped from Wikipedia page *List of countries and dependencies by population* (https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population). Information about who collected the data is not disclosed, but original statistics were obtained from the United Nations and the United Nations Department of Economic and Social Affairs. Population statistics were collected for each global country, and each observation is a single country. The complete dataset was contains data collected from 2020 to 2026. Due to 2020 population statistics not being available for all countries, we obtained the closest value to reflect the 2020-era population. The data originated from the United Nations Department of Economic and Social Affairs, and published into the Wikipedia article mentioned. We used web scraping to take values from the first table on the page, and extract each country and their respective population value. This information was stored in a temporary R data frame before being appended to our meta dataset for 2020 using each countries ISO alpha-3 code. Knowing population statistics across global countries allows us to analyze the association of larger numbers of country inhabitants with a country's political system.
+
+## *Country GDP Data*
+
+The data for country GDP was obtained through an API request to *API Ninjas*. Details about who collected the data is not provided, but the *API Ninjas* sourced their statistics from the *World Bank*. Information was collected on every country globally, and each observation is a single country. The data contains GDP statistics dating back to 1980, however the publication date of the API dataset is not listed. We retrieved values of country GDP through a function with an API request for an inputted country with the query parameter of *year* set to 2020. The function outputted the country's nominal GDP in billions in US dollars. Each request used a personal, hidden key, and the function was iterated over every country in our data, stored in a temporary R data frame, and appended to our meta dataset for 2020 using each countries ISO alpha-3 code. GDP statistics allows us observe whether there is a connection between a country's economic strength and political structure.
+
+## Data Set Up, Retrieval, and Construction
+
+### 1. Gathering the *Democracy and Dictatorship* dataset:
+
+```{r}
+#| warning: false
+library(tidyverse)
+library(ggplot2)
+library(ggridges)
+library(lmtest)
+library(knitr)
+library(httr)
+library(jsonlite)
+library(tidyjson)
+library(gt)
+library(countrycode)
+
+democracy_data <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2024/2024-11-05/democracy_data.csv')
+```
+
+### 2. Web scraping population statistics:
+
+```{r}
+#| label: population-table
+
+library(rvest)
+
+populations <- read_html("https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population")
+
+pop_data <- populations |>
+  html_element("table.wikitable") |>
+  html_table(fill = TRUE) |>
+  select(
+    Country = 1, 
+    Population = 2
+    ) |>
+  mutate(
+    Country    = trimws(Country),
+    Population = as.numeric(gsub("[^0-9]", "", Population))  # strip anything that isn't a digit
+  ) |>
+  filter(!is.na(Population))
+
+```
+
+### 3. Creating a temporary 2020 Country Population data frame:
+
+```{r}
+#| label: country-data
+
+pop_data <- pop_data |>
+  mutate(
+    iso3c = countrycode(Country, 
+                        origin = "country.name", 
+                        destination = "iso3c"
+                        ))
+
+democracy_data_2020 <- democracy_data |>
+  filter(year == 2020) |>
+  mutate(
+    iso3c = countrycode(country_name, 
+                        origin = "country.name", 
+                        destination = "iso3c"
+                        ))
+
+# Now join based on iso3c country code
+country_data <- pop_data |>
+  inner_join(democracy_data_2020, 
+             by = "iso3c")
+
+```
+
+### 4. API request for GDP in USD in billions:
+
+```{r}
+#| label: country-api
+
+# Obtain 2020 GDP in USD for inputted country
+get_gdp_2020 <- function(country, key = my_key)
+  {
+  
+  # Store url to access API with country and key queries
+  url <- glue("https://api.api-ninjas.com/v1/gdp?year=2020;country={country};X-Api-Key={key}")
+  
+  # Temporarily store JSON data safely
+  my_data <- safely(fromJSON)(url)
+  
+  # Check if JSON was successfully obtained
+  if (is.null(my_data$result) |
+      length(my_data$result) == 0) {
+    return(NA)
+  } else {
+    return(my_data$result$gdp_nominal)
+  }
+}
+
+```
+
+```{r}
+#| echo: false
+my_key <- "Zk9p4D2UR8cKVCa1GKMhJgqnWRTzotRYLJOlagkr"
+
+```
+
+### 5. Storing country GDPs in a temporary data frame and saving as a .csv file:
+
+```{r}
+#| eval: false
+# We used a personal API key stored as "my_key"
+library(glue)
+
+# Get GDP for all countries
+gdps <- map_dbl(.x = country_data$iso3c, .f = get_gdp_2020)
+
+# Store GDP with country code as a tibble
+country_gdps <- tibble(iso3c = country_data$iso3c, GDP = gdps)
+
+# Save tibble as a csv
+write.csv(country_gdps, file = "country_gdps.csv")
+
+```
+
+### 6. Create the meta dataset for all countries in 2020:
+
+```{r}
+# Read in csv GDP data
+gdp_data <- read.csv("country_gdps.csv")
+gdp_data <- gdp_data |>
+  select(-X)
+
+# Combine GDP with aggregate 2020 data
+country_meta_data <- country_data |>
+  inner_join(gdp_data, 
+             by = "iso3c", 
+             relationship = "many-to-many")
+
+```
+
+### 7. Adding the gov_type variable:
+
+```{r}
+
+country_meta_data <- country_meta_data |>
+  filter(!is.na(regime_category_index)) |> 
+  mutate(gov_type = case_when(
+    is_communist == TRUE ~ "Communist",
+    is_democracy == TRUE & is_monarchy == TRUE ~ "Democratic Monarchy",
+    is_democracy == TRUE & is_monarchy == FALSE ~ "Pure Democracy",
+    is_democracy == FALSE & is_monarchy == TRUE ~ "Pure Monarchy",
+    TRUE ~ "Other"), 
+    regime_category = case_when(
+    regime_category_index == 0 ~ "Parliamentary democracy",
+    regime_category_index == 1 ~ "Mixed democratic", 
+    regime_category_index == 2 ~ "Presidential democracy",
+    regime_category_index == 3 ~ "Civilian dictatorship", 
+    regime_category_index == 4 ~ "Military dictatorship",
+    regime_category_index == 5 ~ "Royal dictatorship")
+  )
+
+```
+
+# Defining our Functions
+
+### Ridgeline Plots for the Association Between Categorical Variables and GDP in USD (in Billions)
+
+```{r}
+plot_gdp_by_category <- function(cat_var) {
+  # Store variable names
+  var_name <- deparse(substitute(cat_var))
+  var_name2 <- recode(var_name,
+                      "regime_category" = "Regime Category",
+                      "gov_type" = "Government Type",
+                      .default = var_name)
+  
+  country_meta_data |>
+    filter(!is.na({{ cat_var }})) |> 
+    ggplot(aes(y = {{ cat_var }}, x = GDP, fill = {{ cat_var }})) + 
+    geom_density_ridges(alpha = 0.5) + 
+    scale_fill_viridis_d() + 
+    scale_x_log10(labels = scales::comma) +
+    labs(
+      x     = "GDP (log scale)",
+      y     = "", 
+      title = paste("Country GDP in USD (in Billions) by", var_name2), 
+      subtitle = paste("Comparing the GDP of Countries by", var_name2)
+    ) +
+    theme_bw() + 
+    theme(legend.position = "none", 
+          panel.grid.minor = element_blank(), 
+          text = element_text(family = "Helvetica", size = 12))
+  
+}
+
+```
+
+### Summary Statistics for the Association Between Categorical Variables and GDP in USD (in Billions)
+
+```{r}
+
+summarize_gdp_by_category <- function(cat_var) {
+  
+  # Store variable names for use inside gt()
+  var_name <- deparse(substitute(cat_var))
+  var_name2 <- recode(var_name,
+                      "regime_category" = "Regime Category",
+                      "gov_type" = "Government Type",
+                      .default = var_name)
+
+  country_meta_data |>
+    filter(!is.na({{ cat_var }}), 
+           !is.na(GDP)
+    ) |>
+    group_by({{ cat_var }}) |>
+    summarize(n = n(),
+              mean_GDP = mean(GDP, na.rm = TRUE),
+              med_GDP = median(GDP, na.rm = TRUE),
+              sd_GDP = sd(GDP, na.rm = TRUE),
+              se_GDP = sd_GDP / sqrt(n),
+              min_gdp = min(GDP, na.rm = TRUE),
+              max_gdp = max(GDP, na.rm = TRUE),
+              .groups    = "drop"
+    ) |>
+    arrange(desc(mean_GDP)) |>
+    gt() |>
+    fmt_currency(columns = 3:8,
+                 decimals = 2,
+                 currency = "USD",
+                 placement = "left",
+                 pattern = "{x}B"
+    ) |>
+    tab_spanner(label = "Category Breakdown",
+                columns = 1:2
+    ) |>
+    tab_spanner(label = "Midpoints",
+                columns = 3:4
+    ) |>
+    tab_spanner(label = "Variation",
+                columns = 5:6
+    ) |>
+    tab_spanner(label = "Range",
+                columns = 7:8
+    ) |>
+    cols_label(!!var_name := var_name2,
+               n = "Count",
+               mean_GDP = "Mean",
+               med_GDP = "Median",
+               sd_GDP = "Standard Deviation",
+               se_GDP = "Standard Error",
+               min_gdp = "Minimum",
+               max_gdp = "Maximum"
+    ) |>
+    data_color(columns = 2:8, 
+               method = "numeric",
+               palette = "Blues"
+    ) |>
+    tab_header(title = paste("Table of GDP Statistics by", var_name2),
+               subtitle = "(in USD in Billions)"
+    ) |>
+    tab_style(style = cell_text(weight = "bold"),
+              locations = list(cells_title(groups = "title"), 
+                               cells_title(groups = "subtitle"), 
+                               cells_column_labels())
+    ) |>
+    tab_footnote(md("*Note 1*: Standard error was calculated as the standard deviation divided by the square root of the sample size.")) |>
+    tab_footnote(md("*Note 2*: Darker blues represent greater values."))
+  }
+
+```
+
+### Statistical Tests for Models Between Categorical Variables and GDP
+
+```{r}
+# Testing assumptions for model between log(GDP) and categorical variables 
+gdp_assumption_test <- function(cat_var) { 
+  
+  var_name <- deparse(substitute(cat_var))
+  model <- lm(reformulate(var_name, response = "log(GDP)"), data = country_meta_data)
+  
+  par(mfrow = c(2, 2))  # View all 4 diagnostic plots at once 
+  plot(model) 
+
+  print(shapiro.test(residuals(model)))   # testing normality assumption 
+  print(bptest(model))                    # testing equal variance assumption
+  }
+
+```
+
+### Ridgeline Plots for the Association Between Categorical Variables and Population
+
+```{r}
+
+plot_pop_by_category <- function(cat_var) {
+  
+  # Store variable names
+  var_name <- deparse(substitute(cat_var))
+  var_name2 <- recode(var_name,
+                      "regime_category" = "Regime Category",
+                      "gov_type" = "Government Type",
+                      .default = var_name)
+  
+  country_meta_data |>
+    filter(!is.na({{ cat_var }}), !is.na(Population)) |> 
+    ggplot(aes(y = {{ cat_var }}, x = Population, fill = {{ cat_var }})) + 
+    geom_density_ridges(alpha = 0.5) + 
+    scale_x_log10(labels = scales::comma) + 
+    scale_fill_viridis_d() + 
+    labs(
+      x     = "Population (log scale)",
+      y     = "", 
+      title = paste("Country Population by", var_name2), 
+      subtitle = paste("Comparing the Populations of Countries by", var_name2)
+    ) +
+    theme_bw() + 
+    theme(legend.position = "none", 
+          panel.grid.minor = element_blank(), 
+          text = element_text(family = "Helvetica", size = 12))
+}
+```
+
+### Summary Statistics for the Association Between Categorical Variables and Population
+
+```{r}
+
+summarize_pop_by_category <- function(cat_var) {
+  
+  # Store variable names for use inside gt()
+  var_name <- deparse(substitute(cat_var))
+  var_name2 <- recode(var_name,
+                      "regime_category" = "Regime Category",
+                      "gov_type" = "Government Type",
+                      .default = var_name)
+
+  country_meta_data |>
+    filter(!is.na({{ cat_var }}), 
+           !is.na(Population)
+    ) |>
+    group_by({{ cat_var }}) |>
+    summarize(n = n(),
+              mean_pop = mean(Population, na.rm = TRUE),
+              med_pop = median(Population, na.rm = TRUE),
+              sd_pop = sd(Population, na.rm = TRUE),
+              se_pop = sd_pop / sqrt(n),
+              min_pop = min(Population, na.rm = TRUE),
+              max_pop = max(Population, na.rm = TRUE),
+              .groups    = "drop"
+    ) |>
+    arrange(desc(mean_pop)) |>
+    gt() |>
+    fmt_number(columns = 3:8,
+                decimals = 2
+    ) |>
+    tab_spanner(label = "Category Breakdown",
+                columns = 1:2
+    ) |>
+    tab_spanner(label = "Midpoints",
+                columns = 3:4
+    ) |>
+    tab_spanner(label = "Variation",
+                columns = 5:6
+    ) |>
+    tab_spanner(label = "Range",
+                columns = 7:8
+    ) |>
+    cols_label(!!var_name := var_name2,
+               n = "Count",
+               mean_pop = "Mean",
+               med_pop = "Median",
+               sd_pop = "Standard Deviation",
+               se_pop = "Standard Error",
+               min_pop = "Minimum",
+               max_pop = "Maximum"
+    ) |>
+    data_color(columns = 2:8, 
+               method = "numeric",
+               palette = "Blues"
+    ) |>
+    tab_header(title = paste("Table of Population Statistics by", var_name2)
+    ) |>
+    tab_style(style = cell_text(weight = "bold"),
+              locations = list(cells_title(groups = "title"), 
+                               cells_title(groups = "subtitle"), 
+                               cells_column_labels())
+    ) |>
+    tab_footnote(md("*Note 1*: Standard error was calculated as the standard deviation divided by the square root of the sample size.")) |>
+    tab_footnote(md("*Note 2*: Darker blues represent greater values."))
+}
+```
+
+### Statistical Tests for Models Between Categorical Variables and Population
+
+```{r}
+# Testing assumptions for model between log(Population) and categorical variables 
+pop_assumption_test <- function(cat_var) { 
+  
+  var_name <- deparse(substitute(cat_var))
+  model <- lm(reformulate(var_name, response = "log(Population)"), data = country_meta_data)
+  
+  par(mfrow = c(2, 2))  # View all 4 diagnostic plots at once 
+  plot(model) 
+
+  print(shapiro.test(residuals(model)))   # testing normality assumption 
+  print(bptest(model))                    # testing equal variance assumption
+  
+  }
+```
+
+# Research Question 1: Which political ideologies are the most predominant among higher/lower GDP countries?
+
+## Ridgeline Plots for the Association Between Regime Category and GDP in USD (in Billions)
+
+```{r}
+#| fig-alt: "Ridgeline plots showing distributions of log(GDP) for different regime categories. 'Royal Dictatorship' appears to have the highest median GDP, and 'Military Dictatorship' seems to have the lowest median GDP."
+
+plot_gdp_by_category(regime_category)
+```
+
+## Ridgeline Plots for the Association Between Government Type and GDP in USD (in Billions)
+
+```{r}
+#| fig-alt: "Ridgeline plots showing distributions of log(GDP) for different government types. 'Pure Monarchy' appears to have the highest median GDP, and 'Other' seems to have the lowest median GDP."
+
+plot_gdp_by_category(gov_type)
+```
+
+## Summary Statistics for the Association Between Regime Category and GDP in USD (in Billions)
+
+```{r}
+summarize_gdp_by_category(regime_category)
+```
+
+## Summary Statistics for the Association Between Government Type and GDP in USD (in Billions)
+
+```{r}
+summarize_gdp_by_category(gov_type)
+```
+
+## Statistical Test for Model Between Regime Category and GDP
+
+### Model Assumptions
+
+```{r}
+gdp_assumption_test(regime_category)
+```
+
+For the regression model between Regime Category and log(GDP), the equal variance assumption was violated, but all of the other FINE assumptions were met.
+
+### Significance Test
+
+```{r}
+# Welch's ANOVA
+gdp_regime_model <- oneway.test(log(GDP) ~ regime_category, data = country_meta_data, var.equal = FALSE)
+
+data.frame(
+    f_stat   = unname(gdp_regime_model$statistic),
+    num_df   = unname(gdp_regime_model$parameter[1]),
+    denom_df = unname(gdp_regime_model$parameter[2]),
+    p_value  = gdp_regime_model$p.value
+    ) |>
+  gt() |> 
+  cols_label(
+    f_stat   = "F-statistic", 
+    num_df   = "Numerator Degrees of Freedom", 
+    denom_df = "Denominator Degrees of Freedom", 
+    p_value  = "P-value"
+    ) |> 
+  tab_header(title = paste("Welch's ANOVA for log(GDP) and Regime Category")) |> 
+  tab_style(style = cell_text(weight = "bold"), 
+            locations = list(cells_title(groups = "title"), 
+                             cells_column_labels()
+                             )
+            ) |> 
+  tab_footnote(md("At an ⍺ = 0.05 significance level, we do not have enough evidence that there is an association between the geometric mean GDP and the regime categories of countries."))
+
+```
+
+
+## Statistical Tests for Models Between Government Type and GDP
+
+### Model Assumptions:
+
+```{r}
+gdp_assumption_test(gov_type)
+```
+
+For the regression model between Government Type and log(GDP), the equal variance assumption was violated, but all of the other FINE assumptions were met.
+
+### Significance Test:
+
+```{r}
+
+# Welch's ANOVA
+gdp_gov_model <- oneway.test(log(GDP) ~ gov_type, data = country_meta_data, var.equal = FALSE)
+
+data.frame(
+    f_stat   = unname(gdp_gov_model$statistic),
+    num_df   = unname(gdp_gov_model$parameter[1]),
+    denom_df = unname(gdp_gov_model$parameter[2]),
+    p_value  = gdp_gov_model$p.value
+    ) |>
+  gt() |> 
+  cols_label(
+    f_stat   = "F-statistic", 
+    num_df   = "Numerator Degrees of Freedom", 
+    denom_df = "Denominator Degrees of Freedom", 
+    p_value  = "P-value"
+    ) |> 
+  tab_header(title = paste("Welch's ANOVA for log(GDP) and Goverment Type")) |> 
+  tab_style(style = cell_text(weight = "bold"), 
+            locations = list(cells_title(groups = "title"), 
+                             cells_column_labels()
+                             )
+            ) |> 
+  tab_footnote(md("At an ⍺ = 0.05 significance level, we do not have enough evidence that there is an association between the geometric mean GDP and the government types of countries."))
+
+```
+
+# Research Question 2: Is there an association between certain political ideologies and country populations?
+
+## Ridgeline Plots for the Association Between Regime Category and Population
+
+```{r}
+#| fig-alt: "Ridgeline plots showing distributions of log(Population) for different regime categories. 'Civilian dictatorship' appears to have the highest median population, and 'Parliamentary democracy' seems to have the lowest median population."
+plot_pop_by_category(regime_category)
+
+```
+
+## Ridgeline Plots for the Association Between Government Type and Population
+
+```{r}
+#| fig-alt: "Ridgeline plots showing distributions of log(Population) for different regime categories. 'Communist' appears to have the highest median population, and 'Democratic monarchy' seems to have the lowest median population."
+plot_pop_by_category(gov_type)
+```
+
+## Summary Statistics for the Association Between Regime Category and Population
+
+```{r}
+summarize_pop_by_category(regime_category)
+```
+
+## Summary Statistics for the Association Between Government Type and Population
+
+```{r}
+summarize_pop_by_category(gov_type)
+```
+
+## Statistical Test for Model Between Regime Category and Population
+
+### Model Assumptions
+
+```{r}
+pop_assumption_test(regime_category)
+```
+
+For the regression model between Regime Category and log(Population), the equal variance assumption was violated, but all of the other FINE assumptions were met.
+
+### Significance Test
+
+```{r}
+# Welch's ANOVA between regime_category and log(Population)
+pop_regime_model <- oneway.test(log(Population) ~ regime_category, data = country_meta_data, var.equal = FALSE)
+
+data.frame(
+    f_stat   = unname(pop_regime_model$statistic),
+    num_df   = unname(pop_regime_model$parameter[1]),
+    denom_df = unname(pop_regime_model$parameter[2]),
+    p_value  = pop_regime_model$p.value
+    ) |>
+  gt() |> 
+  cols_label(
+    f_stat   = "F-statistic", 
+    num_df   = "Numerator Degrees of Freedom", 
+    denom_df = "Denominator Degrees of Freedom", 
+    p_value  = "P-value"
+    ) |> 
+  tab_header(title = paste("Welch's ANOVA for log(Population) and Regime Category")) |> 
+  tab_style(style = cell_text(weight = "bold"), 
+            locations = list(cells_title(groups = "title"), 
+                             cells_column_labels()
+                             )
+            ) |> 
+  tab_footnote(md("At an ⍺ = 0.05 significance level, we have extremely strong evidence that there is an association between the geometric mean population and the regime categories of countries."))
+```
+
+
+## Statistical Tests for Models Between Government Type and Population
+
+### Model Assumptions:
+
+```{r}
+pop_assumption_test(gov_type)
+```
+
+For the regression model between Government Type and log(Population), the equal variance assumption was violated, but all of the other FINE assumptions were met.
+
+### Significance Test:
+
+```{r}
+# Welch's ANOVA between government type and log(Population)
+pop_gov_model <- oneway.test(log(Population) ~ gov_type, data = country_meta_data, var.equal = FALSE)
+
+data.frame(
+    f_stat   = unname(pop_gov_model$statistic),
+    num_df   = unname(pop_gov_model$parameter[1]),
+    denom_df = unname(pop_gov_model$parameter[2]),
+    p_value  = pop_gov_model$p.value
+    ) |>
+  gt() |> 
+  cols_label(
+    f_stat   = "F-statistic", 
+    num_df   = "Numerator Degrees of Freedom", 
+    denom_df = "Denominator Degrees of Freedom", 
+    p_value  = "P-value"
+    ) |> 
+  tab_header(title = paste("Welch's ANOVA for log(Population) and Government Type")) |> 
+  tab_style(style = cell_text(weight = "bold"), 
+            locations = list(cells_title(groups = "title"), 
+                             cells_column_labels()
+                             )
+            ) |> 
+  tab_footnote(md("At an ⍺ = 0.05 significance level, we have extremely strong evidence that there is an association between the geometric mean population and the government types of countries."))
+```
+
+
