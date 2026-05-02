@@ -465,7 +465,7 @@ summarize_gdp_by_category(gov_type)
 
 ## Statistical Test for Model Between Regime Category and GDP
 
-### Model Assumptions
+### Model Assumptions:
 
 ```{r}
 gdp_assumption_test(regime_category)
@@ -473,7 +473,7 @@ gdp_assumption_test(regime_category)
 
 For the regression model between Regime Category and log(GDP), the equal variance assumption was violated, but all of the other FINE assumptions were met.
 
-### Significance Test
+### Significance Test:
 
 ```{r}
 # Welch's ANOVA
@@ -501,7 +501,6 @@ data.frame(
   tab_footnote(md("At an ⍺ = 0.05 significance level, we do not have enough evidence that there is an association between the geometric mean GDP and the regime categories of countries."))
 
 ```
-
 
 ## Statistical Tests for Models Between Government Type and GDP
 
@@ -543,7 +542,14 @@ data.frame(
 
 ```
 
-# Research Question 2: Is there an association between certain political ideologies and country populations?
+:::{.callout-note}
+## Conclusion and Discussion
+
+The
+
+:::
+
+# Research Question 2 Is there an association between certain political ideologies and country populations?
 
 ## Ridgeline Plots for the Association Between Regime Category and Population
 
@@ -574,7 +580,7 @@ summarize_pop_by_category(gov_type)
 
 ## Statistical Test for Model Between Regime Category and Population
 
-### Model Assumptions
+### Model Assumptions:
 
 ```{r}
 pop_assumption_test(regime_category)
@@ -582,7 +588,7 @@ pop_assumption_test(regime_category)
 
 For the regression model between Regime Category and log(Population), the equal variance assumption was violated, but all of the other FINE assumptions were met.
 
-### Significance Test
+### Significance Test:
 
 ```{r}
 # Welch's ANOVA between regime_category and log(Population)
@@ -609,7 +615,6 @@ data.frame(
             ) |> 
   tab_footnote(md("At an ⍺ = 0.05 significance level, we have extremely strong evidence that there is an association between the geometric mean population and the regime categories of countries."))
 ```
-
 
 ## Statistical Tests for Models Between Government Type and Population
 
@@ -649,4 +654,9 @@ data.frame(
   tab_footnote(md("At an ⍺ = 0.05 significance level, we have extremely strong evidence that there is an association between the geometric mean population and the government types of countries."))
 ```
 
+:::{.callout-note}
+# Conclusion and Discussion
 
+
+
+:::
